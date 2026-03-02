@@ -5,7 +5,7 @@ set -euo pipefail
 # Config (override via env if needed)
 # ============================================================
 PYTHON_BIN="${PYTHON_BIN:-/usr/bin/python3.11}"
-ANSIBLE_VERSION="${ANSIBLE_VERSION:-}" # e.g.  ">=2.16" or "13.4.0"
+ANSIBLE_VERSION="${ANSIBLE_VERSION:-}" # exact version only, e.g. "13.4.0"
 PYJWT_VERSION="${PYJWT_VERSION:-}"     # e.g. "2.9.0"
 NETADDR_VERSION="${NETADDR_VERSION:-}" # e.g. "1.3.0"
 
@@ -37,13 +37,9 @@ install_os_packages() {
 # Ensure Python 3.11
 # ============================================================
 ensure_python_311() {
-  if [ ! -x "$PYTHON_BIN" ]; then
-    log "python3.11 not found at $PYTHON_BIN, installing OS packages..."
-    install_os_packages
-  else
-    install_os_packages # still ensure other packages present
-  fi
+  install_os_packages
 
+  # Resolve actual path if the default wasn't correct
   if [ ! -x "$PYTHON_BIN" ]; then
     if command -v python3.11 >/dev/null 2>&1; then
       PYTHON_BIN="$(command -v python3.11)"
@@ -63,7 +59,7 @@ ensure_python_311() {
 install_python_stack() {
   ensure_python_311
 
-  $PYTHON_BIN -m pip install --upgrade pip setuptools-rust wheel
+  $PYTHON_BIN -m pip install --upgrade pip wheel
 
   local ansible_spec="ansible"
   [ -n "$ANSIBLE_VERSION" ] && ansible_spec="ansible==${ANSIBLE_VERSION}"
@@ -90,7 +86,7 @@ install_python_stack() {
 # ============================================================
 install_collections() {
   log "Installing Ansible collections required by ansible-pull-demo..."
-  ansible-galaxy collection install \
+  ansible-galaxy collection install --force \
     ansible.utils \
     ansible.netcommon \
     ansible.posix \
@@ -102,7 +98,6 @@ install_collections() {
 # Main
 # ============================================================
 main() {
-  install_os_packages
   install_python_stack
   install_collections
 
